@@ -1,20 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 
 
 def custom_title(text, size=30, is_bold=True, color="#FFFFFF", align="left"):
-    """
-    Renders text with specific size, weight, and color.
-    
-    Parameters:
-    - text: The string to display
-    - size: Font size in pixels
-    - is_bold: True for bold, False for normal
-    - color: Hex code for text color
-    - align: 'left', 'center', or 'right'
-    """
+    """Renders text with specific size, weight, and alignment."""
     weight = "bold" if is_bold else "normal"
     
     html_code = f"""
@@ -35,13 +27,9 @@ def custom_title(text, size=30, is_bold=True, color="#FFFFFF", align="left"):
 st.set_page_config(page_title="Meteorite Explorer", page_icon="☄️", layout="wide")
 
 # --- DATA LOADING ---
-
-# Cache the data loading to improve performance
 @st.cache_data
 def load_data():
     """Loads the pre-cleaned meteorite data."""
-    
-    # Load the dataset from the pre-cleaned local CSV file
     file_path = "Meteorite_Landings_Cleaned.csv" 
     
     try:
@@ -54,10 +42,8 @@ def load_data():
         st.error(f"Error loading cleaned data: {e}")
         return pd.DataFrame()
     
-    # Ensure year_int and mass_log exist, which clean_data.py should have created
     if 'year_int' not in df.columns or 'mass_log' not in df.columns:
-        st.error("Error: The cleaned file is missing required processed columns.")
-        st.error("Please re-run `clean_data.py`.")
+        st.error("Error: The cleaned file is missing required processed columns. Please re-run `clean_data.py`.")
         return pd.DataFrame()
         
     return df
@@ -91,18 +77,14 @@ PRESETS = {
 
 # --- MAIN PAGE LAYOUT ---
 custom_title("☄️ NASA Meteorite Landings Explorer", size=60, is_bold=True)
-st.markdown("""
-This interactive app visualizes the [NASA Meteorite Landings dataset](https://data.nasa.gov/dataset/meteorite-landings).
-""")
+st.markdown("This interactive app visualizes the [NASA Meteorite Landings dataset](https://data.nasa.gov/dataset/meteorite-landings).")
 custom_title(
     "Made by: <span style='color:#FFBAE1'>Carla Katrina A. Leduna</span>", 
     size=14, 
     is_bold=False, 
-    color="#AAAAAA", # Gray color for the "Made by:" text
+    color="#AAAAAA", 
     align="left"
 )
-
-
 
 # --- Key Metrics (Uses FILTERED dataset) ---
 st.header("Summary Statistics")
@@ -111,7 +93,7 @@ st.header("Summary Statistics")
 st.markdown("""
 <style>
 .metric-card {
-    background-color: #262730; /* A dark color matching the dark theme */
+    background-color: #262730; 
     border-radius: 10px;
     padding: 20px;
     margin-bottom: 10px;
@@ -124,20 +106,18 @@ st.markdown("""
 }
 .metric-title {
     font-size: 18px;
-    color: #FAFAFA; /* Light text for dark background */
+    color: #FAFAFA;
     margin-bottom: 10px;
 }
 .metric-value {
     font-size: 32px;
-    color: #FF4B4B; /* Red color to match the theme */
+    color: #FF4B4B;
     font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # --- PLACEHOLDER SECTION ---
-# Create columns and empty placeholders for the stats.
-# We will define the filters, calculate the stats, then fill these placeholders.
 metric_col1, metric_col2, metric_col3 = st.columns(3)
 ph_metric1 = metric_col1.empty()
 ph_metric2 = metric_col2.empty()
@@ -146,7 +126,7 @@ ph_metric3 = metric_col3.empty()
 st.divider()
 
 # --- NEW LAYOUT: Filters on Left, Map on Right ---
-col_filter, col_map = st.columns([1, 5]) # 1 part for filters, 3 parts for map
+col_filter, col_map = st.columns([1, 5]) 
 
 with col_filter:
     st.markdown("""
@@ -156,7 +136,7 @@ with col_filter:
         color: #FFFFFF;
         text-align: left;
         margin-bottom: 10px;
-        margin-top: 30px;   /* <--- ADJUST THIS VALUE TO MOVE IT UP/DOWN */
+        margin-top: 30px;
         font-family: sans-serif;
     ">
         Filters
@@ -164,16 +144,14 @@ with col_filter:
     """, unsafe_allow_html=True)
     custom_title("<i>Use these filters to explore the <b>Interactive World Map</b> and <b>Summary Statistics</b>.</i>", size = 12, is_bold=False)
 
-    with st.expander("Mass", expanded=True): # Expanded by default
-        # 1. Mass (using presets instead of a slider)
+    with st.expander("Mass", expanded=True):
         preset_choice = st.radio(
             "Select Mass Range:",
             PRESETS.keys()
         )
         selected_log_mass = PRESETS[preset_choice]
 
-    with st.expander("Year", expanded=True): # Expanded by default
-        # 2. Year (uses the 'year_int' column)
+    with st.expander("Year", expanded=True):
         selected_year = st.slider(
             "Select year range:",
             min_value=slider_min_year,
@@ -183,24 +161,21 @@ with col_filter:
         if min_year == max_year:
             st.info(f"Note: All data is from the year {min_year}.")
 
-    with st.expander("Fall Status", expanded=True): # Expanded by default
-        # 3. Fall Status (Fell or Found)
+    with st.expander("Fall Status", expanded=True):
         fall_status = st.radio(
             "Select fall status:",
             options=['All', 'Fell', 'Found'],
             index=0
         )
     
-    with st.expander("Class", expanded=True): # Expanded by default
-        # 4. Class
+    with st.expander("Class", expanded=True):
         selected_classes = st.multiselect(
             "Select meteorite classes:",
             options=unique_classes,
-            default=[] # Empty list means 'All'
+            default=[] 
         )
 
 # --- APPLY FILTERS ---
-# This dataframe is for the map AND the summary stats
 df_filtered = df_meteorites[
     (df_meteorites['mass_log'] >= selected_log_mass[0]) &
     (df_meteorites['mass_log'] <= selected_log_mass[1]) &
@@ -211,70 +186,45 @@ df_filtered = df_meteorites[
 if fall_status != 'All':
     df_filtered = df_filtered[df_filtered['fall'] == fall_status]
 
-# 4. Apply class filter
-if selected_classes: # Only filter if the list is not empty
+if selected_classes:
     df_filtered = df_filtered[df_filtered['recclass'].isin(selected_classes)]
 
 
 # --- POPULATE THE PLACEHOLDERS ---
-# Now that df_filtered is created, we can calculate the stats
 total_count = df_filtered.shape[0]
 total_mass_kg = df_filtered['mass (g)'].sum() / 1000
 avg_mass_g = 0
 if total_count > 0:
     avg_mass_g = df_filtered['mass (g)'].mean()
 
-# Fill the empty placeholders we created at the top
-ph_metric1.markdown(f"""
-<div class="metric-card">
-    <div class="metric-title">Meteorites</div>
-    <div class="metric-value">{total_count:,}</div>
-</div>
-""", unsafe_allow_html=True)
-
-ph_metric2.markdown(f"""
-<div class="metric-card">
-    <div class="metric-title">Total Mass</div>
-    <div class="metric-value">{total_mass_kg:,.2f} kg</div>
-</div>
-""", unsafe_allow_html=True)
-
-ph_metric3.markdown(f"""
-<div class="metric-card">
-    <div class="metric-title">Average Mass</div>
-    <div class="metric-value">{avg_mass_g:,.2f} g</div>
-</div>
-""", unsafe_allow_html=True)
+ph_metric1.markdown(f"""<div class="metric-card"><div class="metric-title">Meteorites</div><div class="metric-value">{total_count:,}</div></div>""", unsafe_allow_html=True)
+ph_metric2.markdown(f"""<div class="metric-card"><div class="metric-title">Total Mass</div><div class="metric-value">{total_mass_kg:,.2f} kg</div></div>""", unsafe_allow_html=True)
+ph_metric3.markdown(f"""<div class="metric-card"><div class="metric-title">Average Mass</div><div class="metric-value">{avg_mass_g:,.2f} g</div></div>""", unsafe_allow_html=True)
 
 
 # --- Right Column (Map) ---
 with col_map:
-    # --- INTERACTIVE WORLD MAP (Uses FILTERED dataset) ---
     st.header("Interactive World Map")
 
-    # Check if the FILTERED data is empty
     if df_filtered.empty:
         st.warning("No meteorites found for the selected filters. Please expand your criteria.")
     else:
-        # Create the map using df_filtered
         fig = px.scatter_mapbox(
             df_filtered,
-            lat="reclat",  # Use original 'reclat' column
-            lon="reclong", # Use original 'reclong' column
-            color="mass_log",  # Color by log-mass for better visual range
-            size="mass_log",   # Size by log-mass
+            lat="reclat", 
+            lon="reclong", 
+            color="mass_log",
+            size="mass_log",   
             hover_name="name",
-            custom_data=['mass (g)', 'year_int', 'recclass'], # Pass data for the template
-            
+            custom_data=['mass (g)', 'year_int', 'recclass'],
             color_continuous_scale=px.colors.sequential.Reds,
-            range_color=(min_log_mass, max_log_mass), # Use min/max from FULL dataset
+            range_color=(min_log_mass, max_log_mass), 
             mapbox_style="carto-darkmatter",
             zoom=1,
             title="Meteorite Landings (Color & Size by Mass)",
             opacity=0.7
         )
 
-        # --- NEW HOVER TEMPLATE ---
         fig.update_traces(
             hovertemplate="""
             <b>%{hovertext}</b><br><br>
@@ -292,12 +242,12 @@ with col_map:
             coloraxis_colorbar={
                 'title':'Mass (g) - Log Scale'
             },
+            modebar_remove=['zoomIn2d', 'zoomOut2d', 'select2d', 'lasso2d'], 
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)'
         )
 
-        # Display the map in Streamlit
-        st.plotly_chart(fig, use_container_width=True) # <-- Height is set here
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True})
         
         st.markdown("""
         <p style="
@@ -320,9 +270,8 @@ st.markdown("Statistics representing the entire dataset")
 col_insights1, col_insights2 = st.columns(2)
 
 with col_insights1:
-    # 1. Bar chart of Top 10 classifications (Uses FULL dataset)
+    # 1. Bar chart of Top 10 classifications
     st.subheader("Top 10 Meteorite Classes")
-    # Use original 'df_meteorites' dataframe
     class_counts = df_meteorites['recclass'].value_counts().nlargest(10).reset_index()
     class_counts.columns = ['Classification', 'Count']
     
@@ -331,21 +280,18 @@ with col_insights1:
         x='Classification',
         y='Count',
         title="Most frequent classifications found.",
-        # --- THEME CHANGE ---
-        color='Count',                  # Color based on the number (Heatmap style)
-        color_continuous_scale='Reds',  # Use the Red scale to match the map
-        # --------------------
+        color='Count',
+        color_continuous_scale='Reds',
         template="plotly_dark"
     )
     
     fig_class.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        coloraxis_showscale=False,       # Hides the color bar (optional, keeps it clean)
-        xaxis_title=None                 # Optional: Remove X-axis label if obvious
+        coloraxis_showscale=False,
+        xaxis_title=None
     )
     
-    # Add custom hover template
     fig_class.update_traces(
         hovertemplate="""
         Classification = %{x}<br>
@@ -356,13 +302,10 @@ with col_insights1:
     st.plotly_chart(fig_class, use_container_width=True)
 
 with col_insights2:
-    # 2. Histogram of Mass (Uses FULL dataset)
+    # 2. Histogram of Mass
     st.subheader("Mass Distribution")
     
-    # Use original 'df_meteorites' dataframe
     counts, bins = np.histogram(df_meteorites['mass_log'], bins=50)
-    
-    bin_width = bins[1] - bins[0]
     bin_centers = (bins[:-1] + bins[1:]) / 2
     
     hist_df = pd.DataFrame({
@@ -391,14 +334,13 @@ with col_insights2:
         bargap=0.01
     )
     
-    # Add custom hover template
     fig_mass_hist.update_traces(
         hovertemplate="""
         Mass (g) - Log Scale = %{x:.2f}<br>
         Count = %{y}
         <extra></extra>
         """,
-        width=bin_width
+        width=bins[1] - bins[0]
     )
     st.plotly_chart(fig_mass_hist, use_container_width=True)
 
@@ -407,11 +349,10 @@ with col_insights2:
 col_insights3, col_insights4 = st.columns(2)
 
 with col_insights3:
-    # 3. Line chart of discoveries over time (Uses FULL dataset)
+    # 3. Line chart of discoveries over time
     st.subheader("Discovery Timeline")
-    # Use original 'df_meteorites' dataframe
     discoveries_by_year = df_meteorites['year_int'].value_counts().reset_index()
-    discoveries_by_year.columns = ['Year', 'Count'] # Fixed syntax error
+    discoveries_by_year.columns = ['Year', 'Count']
     discoveries_by_year = discoveries_by_year.sort_values('Year')
     
     fig_line = px.line(
@@ -436,9 +377,8 @@ with col_insights3:
     st.plotly_chart(fig_line, use_container_width=True)
 
 with col_insights4:
-    # 4. Pie chart of Fell vs. Found (Uses FULL dataset)
+    # 4. Pie chart of Fell vs. Found
     st.subheader("Fell vs. Found")
-    # Use original 'df_meteorites' dataframe
     fall_counts = df_meteorites['fall'].value_counts().reset_index()
     fall_counts.columns = ['Status', 'Count']
     
@@ -446,13 +386,10 @@ with col_insights4:
         fall_counts,
         names='Status',
         values='Count',
-        # --- THE FIX: You must add color='Status' here ---
-        color='Status', 
-        # -------------------------------------------------
+        color='Status',
         title="Proportion of observed falls vs. accidental finds.",
         template="plotly_dark",
         hole=0.3,
-        # Now this map will actually work:
         color_discrete_map={'Found': "#F9413E", 'Fell': "#A20000"} 
     )
     fig_pie.update_layout(
@@ -468,9 +405,8 @@ with col_insights4:
     )
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# 5. Scatterplot of Year vs. Mass (Uses FULL dataset)
+# 5. Scatterplot of Year vs. Mass
 st.subheader("Mass Trends Over Time")
-# Use original 'df_meteorites' dataframe
 fig_scatter = px.scatter(
     df_meteorites.sample(min(1000, len(df_meteorites))),
     x='year_int',
@@ -505,8 +441,7 @@ st.plotly_chart(fig_scatter, use_container_width=True)
 st.header("The Giants: Top 100 Largest Meteorites")
 st.markdown("This table shows the largest meteorites in the **entire** dataset.")
 
-# Use original 'df_meteorites' dataframe
-df_top100 = df_meteorites.sort_values('mass (g)', ascending=False).head(100) # Fixed 100.0 typo
+df_top100 = df_meteorites.sort_values('mass (g)', ascending=False).head(100) 
 
 # Select and rename columns for display
 df_display = df_top100[['name', 'mass (g)', 'year_int', 'recclass', 'fall']].rename(
@@ -517,11 +452,11 @@ df_display = df_top100[['name', 'mass (g)', 'year_int', 'recclass', 'fall']].ren
         'recclass': 'Class',
         'fall': 'Fall'
     }
-).reset_index(drop=True) # Physically remove the index
+).reset_index(drop=True) 
 
 # Show a sample of the data, sorted by mass
 st.dataframe(
     df_display,
     use_container_width=True,
-    hide_index=True # Hide index just in case
+    hide_index=True 
 )
