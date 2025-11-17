@@ -242,7 +242,7 @@ with col_map:
             coloraxis_colorbar={
                 'title':'Mass (g) - Log Scale'
             },
-            modebar_remove=['zoomIn2d', 'zoomOut2d', 'select2d', 'lasso2d'], 
+            # Removed modebar_remove to allow native zooming/panning
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)'
         )
@@ -355,24 +355,21 @@ with col_insights3:
     discoveries_by_year.columns = ['Year', 'Count']
     discoveries_by_year = discoveries_by_year.sort_values('Year')
     
-    fig_line = px.line(
-        discoveries_by_year,
-        x='Year',
-        y='Count',
-        title="Meteorite Discoveries per Year",
-        template="plotly_dark"
-    )
+    # --- REPLACED px.line with go.Scatter for clean code and styling ---
+    fig_line = go.Figure(go.Scatter(
+        x=discoveries_by_year['Year'],
+        y=discoveries_by_year['Count'],
+        mode='lines',
+        line=dict(color='#FFAB8F'),
+        hovertemplate="Year = %{x}<br>Count = %{y}<extra></extra>"
+    ))
+    # -----------------------------------------------------------------
+    
     fig_line.update_layout(
+        title="Meteorite Discoveries per Year",
+        template="plotly_dark",
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)'
-    )
-    fig_line.update_traces(
-        hovertemplate="""
-        Year = %{x}<br>
-        Count = %{y}
-        <extra></extra>
-        """,
-        line_color='#FFAB8F'
     )
     st.plotly_chart(fig_line, use_container_width=True)
 
