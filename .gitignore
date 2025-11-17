@@ -1,0 +1,12 @@
+# --- Environments and Caches ---
+# Ignores the virtual environment folder specific to your computer
+venv/
+.venv/
+
+# Ignores Python's cache files
+__pycache__/
+*.pyc
+
+# --- Raw Data (DO NOT UPLOAD) ---
+# Your app loads the CLEANED data, so the original raw file is not needed.
+Meteorite_Landings.csv
